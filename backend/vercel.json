@@ -1,5 +1,5 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "installCommand": "npm install",
-  "buildCommand": "cd .. && npm install --prefix admin_panel && npm run build --prefix admin_panel && node scripts/sync-admin-to-public.cjs"
+  "buildCommand": "npm install --prefix ../admin_panel && npm run build --prefix ../admin_panel && node ../scripts/sync-admin-to-public.cjs"
 }

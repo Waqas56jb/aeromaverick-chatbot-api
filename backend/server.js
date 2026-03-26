@@ -51,6 +51,7 @@
 "use strict";
 
 const path = require("path");
+const os = require("os");
 // Local: load backend/.env. On Vercel (VERCEL=1), never read a file — use only Project → Environment Variables.
 if (!process.env.VERCEL) {
   const envPath = path.join(__dirname, ".env");
@@ -62,7 +63,6 @@ if (!process.env.VERCEL) {
 const express  = require("express");
 const cors     = require("cors");
 const OpenAI   = require("openai");
-const ExcelJS  = require("exceljs");
 const { v4: uuidv4 } = require("uuid");
 const fs       = require("fs");
 const db       = require("./db");
@@ -73,9 +73,9 @@ const {
 } = require("./bots");
 
 // ─── Config ──────────────────────────────────────────────────
-// Vercel serverless FS is read-only except /tmp — writing leads.xlsx next to this file fails at startup.
+// Vercel: writable temp dir (use os.tmpdir — /tmp is wrong on Windows and can break local “VERCEL=1” smoke tests).
 if (process.env.VERCEL && !(process.env.LEADS_FILE || "").trim()) {
-  process.env.LEADS_FILE = path.join("/tmp", "aeromaverick-leads.xlsx");
+  process.env.LEADS_FILE = path.join(os.tmpdir(), "aeromaverick-leads.xlsx");
 }
 
 const PORT       = process.env.PORT || 3000;
@@ -145,7 +145,12 @@ function csvEscape(val) {
   return t;
 }
 
+function requireExcelJS() {
+  return require("exceljs");
+}
+
 async function workbookFromLeadRows(rows) {
+  const ExcelJS = requireExcelJS();
   const wb = new ExcelJS.Workbook();
   const ws = wb.addWorksheet("Leads");
   ws.columns = [
@@ -539,6 +544,7 @@ You are a conversion-focused aviation concierge helping users complete real avia
 async function ensureLeadsFile() {
   if (fs.existsSync(LEADS_FILE)) return;
 
+  const ExcelJS = requireExcelJS();
   const wb = new ExcelJS.Workbook();
   const ws = wb.addWorksheet("Leads");
 
@@ -576,6 +582,7 @@ async function ensureLeadsFile() {
 async function saveLeadToExcelFile(sessionId, leadData) {
   await ensureLeadsFile();
 
+  const ExcelJS = requireExcelJS();
   const wb = new ExcelJS.Workbook();
   await wb.xlsx.readFile(LEADS_FILE);
 
@@ -662,7 +669,9 @@ function cleanupSessions() {
     }
   }
 }
-setInterval(cleanupSessions, 15 * 60 * 1000); // run every 15 min
+if (!IS_VERCEL) {
+  setInterval(cleanupSessions, 15 * 60 * 1000); // run every 15 min (skip on Vercel serverless)
+}
 
 // ─────────────────────────────────────────────────────────────
 //  LEAD PARSER
@@ -795,6 +804,7 @@ app.get("/leads", async (req, res) => {
     }
 
     await ensureLeadsFile();
+    const ExcelJS = requireExcelJS();
     const wb = new ExcelJS.Workbook();
     await wb.xlsx.readFile(LEADS_FILE);
     await wb.xlsx.write(res);
@@ -1078,10 +1088,14 @@ function logStartupBanner() {
   console.log("═══════════════════════════════════════════════");
 }
 
-Promise.all([
-  ensureLeadsFile().catch((e) => console.error("[Startup] Excel:", e?.message || e)),
+// On Vercel, skip startup Excel (loads exceljs / touches disk); /leads and lead-save call ensureLeadsFile when needed.
+const _startup = [
   db.initDb().catch((e) => console.error("[Startup] DB:", e?.message || e)),
-]).finally(() => {
+];
+if (!IS_VERCEL) {
+  _startup.push(ensureLeadsFile().catch((e) => console.error("[Startup] Excel:", e?.message || e)));
+}
+Promise.all(_startup).finally(() => {
   if (IS_VERCEL) {
     logStartupBanner();
     return;
@@ -1089,5 +1103,6 @@ Promise.all([
   app.listen(PORT, logStartupBanner);
 });
 
-/** Vercel (@vercel/node): use exported app; do not rely on app.listen. */
+/** Vercel / Express: CJS export; some bundlers also look for `default`. */
 module.exports = app;
+module.exports.default = app;
