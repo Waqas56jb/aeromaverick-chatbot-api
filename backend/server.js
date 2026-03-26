@@ -84,7 +84,8 @@ const MODEL      = "gpt-4o";          // or "gpt-4-turbo" / "gpt-3.5-turbo"
 const MAX_TOKENS = 700;
 
 // ─── OpenAI client ───────────────────────────────────────────
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+// SDK throws if apiKey is missing/undefined; empty string is allowed so Vercel can boot /health even before OPENAI_API_KEY is set in the dashboard.
+const openai = new OpenAI({ apiKey: (process.env.OPENAI_API_KEY || "").trim() });
 
 // ─── In-memory session store ─────────────────────────────────
 // { session_id: { messages: [], lead: {}, createdAt: Date } }
