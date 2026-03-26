@@ -72,8 +72,14 @@ const {
 } = require("./bots");
 
 // ─── Config ──────────────────────────────────────────────────
+// Vercel serverless FS is read-only except /tmp — writing leads.xlsx next to this file fails at startup.
+if (process.env.VERCEL && !(process.env.LEADS_FILE || "").trim()) {
+  process.env.LEADS_FILE = path.join("/tmp", "aeromaverick-leads.xlsx");
+}
+
 const PORT       = process.env.PORT || 3000;
 const LEADS_FILE = process.env.LEADS_FILE || path.join(__dirname, "leads.xlsx");
+const IS_VERCEL  = Boolean(process.env.VERCEL);
 const MODEL      = "gpt-4o";          // or "gpt-4-turbo" / "gpt-3.5-turbo"
 const MAX_TOKENS = 700;
 
@@ -1016,6 +1022,8 @@ const ADMIN_DIST = path.join(__dirname, "..", "admin_panel", "dist");
 const ADMIN_INDEX = path.join(ADMIN_DIST, "index.html");
 
 if (fs.existsSync(ADMIN_INDEX)) {
+  /* Trailing slash so relative asset URLs (Vite base ./) resolve under /panel/, not site root. */
+  app.get("/panel", (_req, res) => res.redirect(301, "/panel/"));
   app.use(
     "/panel",
     express.static(ADMIN_DIST, {
@@ -1028,35 +1036,49 @@ if (fs.existsSync(ADMIN_INDEX)) {
   });
 }
 
+function logStartupBanner() {
+  console.log("═══════════════════════════════════════════════");
+  console.log("  AeroMaverick Chatbot Backend");
+  if (!IS_VERCEL) {
+    console.log(`  Server running on http://localhost:${PORT}`);
+  } else {
+    console.log("  Runtime: Vercel (exporting Express app — no TCP listen)");
+  }
+  console.log(`  Leads file    : ${LEADS_FILE}`);
+  console.log(`  Model         : ${MODEL}`);
+  console.log(`  Database env   : ${db.hasDatabaseConfig() ? "on" : "off"}`);
+  console.log(`  ADMIN_API_KEY : ${ADMIN_API_KEY ? "set (Bearer required)" : "open (no auth)"}`);
+  if (!ADMIN_API_KEY) {
+    console.warn("  ⚠ Admin routes are open. Set ADMIN_API_KEY to restrict /admin/*");
+  }
+  console.log("═══════════════════════════════════════════════");
+  console.log("  Endpoints:");
+  console.log(`  POST /chat — chat`);
+  console.log(`  GET  /leads — export xlsx`);
+  console.log(`  GET  /health — health`);
+  console.log(`  GET  /config — public config`);
+  console.log(`  GET  /admin/leads — list${ADMIN_API_KEY ? " (Bearer)" : ""}`);
+  console.log(`  GET  /admin/leads/:id — one row`);
+  console.log(`  POST /admin/leads/delete — bulk delete (JSON body, ?bot=)`);
+  console.log(`  DELETE /admin/leads — same as POST delete`);
+  console.log(`  GET  /admin/stats — counts`);
+  console.log(`  GET  /admin/leads/export.csv | export.xlsx`);
+  if (fs.existsSync(ADMIN_INDEX)) {
+    console.log(`  GET  /panel     — admin UI (built)`);
+  }
+  console.log("═══════════════════════════════════════════════");
+}
+
 Promise.all([
   ensureLeadsFile().catch((e) => console.error("[Startup] Excel:", e?.message || e)),
   db.initDb().catch((e) => console.error("[Startup] DB:", e?.message || e)),
 ]).finally(() => {
-    app.listen(PORT, () => {
-      console.log("═══════════════════════════════════════════════");
-      console.log("  AeroMaverick Chatbot Backend");
-      console.log(`  Server running on http://localhost:${PORT}`);
-      console.log(`  Leads file    : ${LEADS_FILE}`);
-      console.log(`  Model         : ${MODEL}`);
-      console.log(`  Database env   : ${db.hasDatabaseConfig() ? "on" : "off"} (backend/.env)`);
-      console.log(`  ADMIN_API_KEY : ${ADMIN_API_KEY ? "set (Bearer required)" : "open (no auth)"}`);
-      if (!ADMIN_API_KEY) {
-        console.warn("  ⚠ Admin routes are open. Set ADMIN_API_KEY to restrict /admin/*");
-      }
-      console.log("═══════════════════════════════════════════════");
-      console.log("  Endpoints:");
-      console.log(`  POST /chat — chat`);
-      console.log(`  GET  /leads — export xlsx`);
-      console.log(`  GET  /health — health`);
-      console.log(`  GET  /admin/leads — list${ADMIN_API_KEY ? " (Bearer)" : ""}`);
-      console.log(`  GET  /admin/leads/:id — one row`);
-      console.log(`  POST /admin/leads/delete — bulk delete (JSON body, ?bot=)`);
-      console.log(`  DELETE /admin/leads — same as POST delete`);
-      console.log(`  GET  /admin/stats — counts`);
-      console.log(`  GET  /admin/leads/export.csv | export.xlsx`);
-      if (fs.existsSync(ADMIN_INDEX)) {
-        console.log(`  GET  /panel     — admin UI (built)`);
-      }
-      console.log("═══════════════════════════════════════════════");
-    });
-  });
+  if (IS_VERCEL) {
+    logStartupBanner();
+    return;
+  }
+  app.listen(PORT, logStartupBanner);
+});
+
+/** Vercel (@vercel/node): use exported app; do not rely on app.listen. */
+module.exports = app;
