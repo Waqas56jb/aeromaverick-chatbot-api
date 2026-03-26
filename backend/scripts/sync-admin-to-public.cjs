@@ -3,7 +3,9 @@
 const fs = require("fs");
 const path = require("path");
 
-const src = path.join(__dirname, "..", "admin_panel", "dist");
+/** Repo layout: backend/scripts → …/admin_panel/dist and …/backend/public/panel */
+const repoRoot = path.join(__dirname, "..", "..");
+const src = path.join(repoRoot, "admin_panel", "dist");
 const dest = path.join(__dirname, "..", "public", "panel");
 
 if (!fs.existsSync(path.join(src, "index.html"))) {
@@ -23,4 +25,4 @@ function copyRecursive(from, to) {
 
 fs.rmSync(dest, { recursive: true, force: true });
 copyRecursive(src, dest);
-console.log("[sync-admin] copied admin_panel/dist → public/panel");
+console.log("[sync-admin] copied admin_panel/dist → backend/public/panel");

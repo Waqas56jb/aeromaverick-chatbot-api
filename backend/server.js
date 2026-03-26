@@ -14,7 +14,7 @@
  *
  *  SETUP
  *  -----
- *  npm install express openai exceljs uuid dotenv cors
+ *  npm install express openai exceljs dotenv cors
  *
  *  .env file:
  *    OPENAI_API_KEY=sk-...
@@ -63,7 +63,7 @@ if (!process.env.VERCEL) {
 const express  = require("express");
 const cors     = require("cors");
 const OpenAI   = require("openai");
-const { v4: uuidv4 } = require("uuid");
+const { randomUUID } = require("crypto");
 const fs       = require("fs");
 const db       = require("./db");
 const {
@@ -723,7 +723,7 @@ app.post("/chat", async (req, res) => {
       return res.status(400).json({ error: "message is required" });
     }
 
-    const sessionId = session_id || uuidv4();
+    const sessionId = session_id || randomUUID();
     const session = getSession(sessionId, bot);
 
     // Add user message to history
@@ -1030,9 +1030,9 @@ app.get("/health", (req, res) => {
 //  START SERVER
 // ─────────────────────────────────────────────────────────────
 
-/* Prefer build output copied to public/panel (Vercel CDN + build); else local admin_panel/dist. */
+/* Prefer backend/public/panel (post-build copy); else monorepo admin_panel/dist for local dev. */
 const ADMIN_DIST_CANDIDATES = [
-  path.join(__dirname, "..", "public", "panel"),
+  path.join(__dirname, "public", "panel"),
   path.join(__dirname, "..", "admin_panel", "dist"),
 ];
 const ADMIN_DIST =

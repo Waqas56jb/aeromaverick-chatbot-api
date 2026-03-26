@@ -22,7 +22,7 @@ node_modules/
 dist/
 build/
 .vite/
-public/panel/
+backend/public/panel/
 
 # -----------------------------------------------------------------------------
 # Logs & debug

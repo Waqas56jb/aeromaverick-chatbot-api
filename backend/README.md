@@ -2,6 +2,8 @@
 
 Node.js + Express backend: `/chat`, `/config`, `/health`, `/admin/*`, `/leads`, static admin UI under `/panel` when the admin build is present.
 
+**Vercel `FUNCTION_INVOCATION_FAILED`:** see **`VERCEL_DEBUG_PROMPT.md`** for where logs live, config reference, and a **copy-paste prompt** for Claude (paste your Runtime log error there).
+
 ---
 
 ## Deploy on Vercel (Root Directory = `backend`)
@@ -10,9 +12,9 @@ In the Vercel project:
 
 1. **Settings → General → Root Directory** → set to **`backend`** (not the monorepo root).
 2. **Settings → Environment Variables** → add the variables below for **Production** (and **Preview** if you use previews). Values should match what you use locally in `.env`, but **never commit** real secrets to git.
-3. Connect the Git repo and deploy. Build runs `backend/vercel.json`’s `buildCommand`, which builds `admin_panel` and copies output to `public/panel` at the repo root.
+3. Connect the Git repo and deploy. Build runs `backend/vercel.json`’s `buildCommand`, which builds `admin_panel` and copies output to **`backend/public/panel`** (`backend/scripts/sync-admin-to-public.cjs`).
 
-The root-level `vercel.json` and `server.js` are only used if you instead set Root Directory to the **repository root**; with Root Directory **`backend`**, Vercel ignores those and uses **`backend/server.js`** as the Express entry.
+The repository root intentionally holds only **`backend/`**, **`admin_panel/`**, **`frontend/`**, and **`.gitignore`**. Express entry is always **`backend/server.js`** (set Vercel **Root Directory** to **`backend`**).
 
 ### Environment variables to define on Vercel
 
