@@ -17,7 +17,10 @@ export function getApiBase() {
 }
 
 export async function loadBackendConfig() {
-  const candidates = ["/config"];
+  const base = getApiBase();
+  const candidates = [];
+  if (base) candidates.push(`${base}/config`);
+  candidates.push("/config");
   if (import.meta.env.DEV) {
     candidates.push("http://localhost:3000/config");
   }
