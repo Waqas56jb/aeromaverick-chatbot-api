@@ -1,6 +1,5 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "framework": null,
   "installCommand": "npm install --prefix backend && npm install --prefix admin_panel && npm install",
   "buildCommand": "npm run build"
 }

@@ -53,10 +53,12 @@
 const path = require("path");
 // Always load backend/.env. Use override:true so values win over empty/global env (e.g. DATABASE_URL
 // preset in the shell) — otherwise dotenv skips keys already on process.env and DB appears "off".
-require("dotenv").config({
-  path: path.join(__dirname, ".env"),
-  override: true,
-});
+const envPath = path.join(__dirname, ".env");
+if (require("fs").existsSync(envPath)) {
+  require("dotenv").config({ path: envPath, override: true });
+} else {
+  require("dotenv").config();
+}
 
 const express  = require("express");
 const cors     = require("cors");
