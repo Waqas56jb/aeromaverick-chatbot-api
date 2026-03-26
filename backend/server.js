@@ -1019,12 +1019,19 @@ app.get("/health", (req, res) => {
 //  START SERVER
 // ─────────────────────────────────────────────────────────────
 
-const ADMIN_DIST = path.join(__dirname, "..", "admin_panel", "dist");
-const ADMIN_INDEX = path.join(ADMIN_DIST, "index.html");
+/* Prefer build output copied to public/panel (Vercel CDN + build); else local admin_panel/dist. */
+const ADMIN_DIST_CANDIDATES = [
+  path.join(__dirname, "..", "public", "panel"),
+  path.join(__dirname, "..", "admin_panel", "dist"),
+];
+const ADMIN_DIST =
+  ADMIN_DIST_CANDIDATES.find((dir) => fs.existsSync(path.join(dir, "index.html"))) || null;
+const ADMIN_INDEX = ADMIN_DIST ? path.join(ADMIN_DIST, "index.html") : null;
 
-if (fs.existsSync(ADMIN_INDEX)) {
+if (ADMIN_INDEX && fs.existsSync(ADMIN_INDEX)) {
   /* Trailing slash so relative asset URLs (Vite base ./) resolve under /panel/, not site root. */
   app.get("/panel", (_req, res) => res.redirect(301, "/panel/"));
+  /* Locally, express.static serves the UI. On Vercel, static is usually served from public/ on the CDN; keep this for dev and fallback. */
   app.use(
     "/panel",
     express.static(ADMIN_DIST, {
@@ -1064,7 +1071,7 @@ function logStartupBanner() {
   console.log(`  DELETE /admin/leads — same as POST delete`);
   console.log(`  GET  /admin/stats — counts`);
   console.log(`  GET  /admin/leads/export.csv | export.xlsx`);
-  if (fs.existsSync(ADMIN_INDEX)) {
+  if (ADMIN_INDEX && fs.existsSync(ADMIN_INDEX)) {
     console.log(`  GET  /panel     — admin UI (built)`);
   }
   console.log("═══════════════════════════════════════════════");
