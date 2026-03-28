@@ -84,16 +84,50 @@ No auth. Use once at app load to discover API URL, feature flags, chatbot list.
 
 ## 3. Chat (main integration)
 
+### 3a. Start session (recommended — server-controlled welcome)
+
+On **page load** (or “New chat”), create a thread **before** the user types. The first assistant line is defined by the API (`CHAT_WELCOME_MESSAGE` on the server), not the frontend.
+
+**`POST {API_BASE}/chat/session`**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `bot` | string | No | Workspace slug (same as `/chat`). |
+
+**`GET {API_BASE}/chat/init?bot=aeromaverick`** — same response (optional alternative for simple clients).
+
+### Response `200` — JSON
+
+```json
+{
+  "session_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+  "sessionId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+  "bot": "aeromaverick",
+  "messages": [
+    {
+      "role": "assistant",
+      "content": "Hi 👋 Welcome to AeroMaverick. How can I help you today — are you looking to buy, sell, or finance an aircraft?"
+    }
+  ]
+}
+```
+
+Persist `session_id` and render `messages` as-is. **Do not** inject your own default welcome in the UI.
+
+---
+
+### 3b. Send a user message
+
 **`POST {API_BASE}/chat`**
 
-Maintains **conversation memory** per `session_id`. If you omit `session_id`, the server creates one and returns it — **store it** and send it on every subsequent message for the same user/thread.
+Maintains **conversation memory** per `session_id`. Send the **`session_id` from §3a** on every user turn. (Legacy: if you omit `session_id` on the first `/chat` call, the server creates an **empty** session — no automatic welcome until you adopt §3a.)
 
 ### Request body — JSON
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `message` | string | **Yes** | User message (non-empty after trim). |
-| `session_id` | string (UUID) | No | Omit on first message; reuse on follow-ups for same conversation. |
+| `session_id` | string (UUID) | No | Use the id from **`POST /chat/session`**; reuse on every message in the thread. |
 | `bot` | string | No | Workspace slug; invalid values fall back to server default (see §6). |
 
 ### Example — first message

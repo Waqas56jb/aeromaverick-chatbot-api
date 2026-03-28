@@ -6,6 +6,8 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
+      "/chat/session": { target: "http://localhost:3000", changeOrigin: true },
+      "/chat/init": { target: "http://localhost:3000", changeOrigin: true },
       "/chat": { target: "http://localhost:3000", changeOrigin: true },
       "/health": { target: "http://localhost:3000", changeOrigin: true },
       "/leads": { target: "http://localhost:3000", changeOrigin: true },

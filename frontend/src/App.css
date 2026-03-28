@@ -144,6 +144,23 @@ body {
   color: #fecaca;
 }
 
+.chat-alert-retry {
+  margin-left: 0.35rem;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #fecaca;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(254, 202, 202, 0.4);
+  border-radius: 6px;
+  padding: 0.15rem 0.5rem;
+  cursor: pointer;
+}
+
+.chat-alert-retry:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
 .chat-body {
   flex: 1;
   min-height: 0;
@@ -282,6 +299,11 @@ body {
   border-radius: var(--radius-bubble);
   border-bottom-left-radius: 6px;
   padding: 0.7rem 0.9rem;
+}
+
+/* First message visible immediately; session still attaching */
+.msg-bubble--bootstrapping {
+  opacity: 0.92;
 }
 
 .msg-bubble--user {

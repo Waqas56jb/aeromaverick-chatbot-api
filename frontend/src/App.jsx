@@ -4,6 +4,16 @@ const API_BASE = (import.meta.env.VITE_API_BASE || "").replace(/\/$/, "");
 const api = (path) => `${API_BASE}${path}`;
 const CHAT_BOT = (import.meta.env.VITE_BOT_SLUG || "aeromaverick").trim();
 
+/** Instant first paint — must match server default in `getChatWelcomeMessage()` when env unset. Override with VITE_CHAT_WELCOME_MESSAGE to match server CHAT_WELCOME_MESSAGE. */
+const SERVER_DEFAULT_WELCOME =
+  "Hi 👋 Welcome to AeroMaverick. How can I help you today — are you looking to buy, sell, or finance an aircraft?";
+
+function buildProvisionalWelcome() {
+  const fromEnv = (import.meta.env.VITE_CHAT_WELCOME_MESSAGE || "").trim();
+  const content = fromEnv || SERVER_DEFAULT_WELCOME;
+  return [{ role: "assistant", content, ts: Date.now() }];
+}
+
 const TEAM_NAME = "AeroMaverick Team";
 
 /** Dummy chatbot avatar — airplane (Twemoji PNG via jsDelivr). */
@@ -120,9 +130,11 @@ function AssistantMessageBody({ text }) {
 
 function App() {
   const [sessionId, setSessionId] = useState(null);
-  const [messages, setMessages] = useState([]);
+  const [messages, setMessages] = useState(buildProvisionalWelcome);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [bootLoading, setBootLoading] = useState(true);
+  const [bootError, setBootError] = useState(null);
   const [error, setError] = useState(null);
   const listEndRef = useRef(null);
 
@@ -132,9 +144,48 @@ function App() {
     scrollToBottom();
   }, [messages, loading]);
 
+  const startChatSession = useCallback(async () => {
+    setBootError(null);
+    setError(null);
+    setBootLoading(true);
+    try {
+      const res = await fetch(api("/chat/session"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ bot: CHAT_BOT }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data.error || `Could not start chat (${res.status})`);
+      }
+      const sid = data.session_id || data.sessionId;
+      if (!sid) throw new Error("Invalid session response from server.");
+      setSessionId(sid);
+      const now = Date.now();
+      const initial = Array.isArray(data.messages)
+        ? data.messages.map((m, i) => ({
+            role: m.role === "user" ? "user" : "assistant",
+            content: String(m.content ?? ""),
+            ts: now + i,
+          }))
+        : [];
+      setMessages(initial);
+    } catch (e) {
+      setBootError(e.message || "Network error");
+      setSessionId(null);
+      /* Keep provisional welcome visible — never flash an empty thread. */
+    } finally {
+      setBootLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    startChatSession();
+  }, [startChatSession]);
+
   const send = useCallback(async () => {
     const text = input.trim();
-    if (!text || loading) return;
+    if (!text || loading || bootLoading || !sessionId) return;
 
     const now = Date.now();
     setInput("");
@@ -143,8 +194,7 @@ function App() {
     setLoading(true);
 
     try {
-      const body = { message: text, bot: CHAT_BOT };
-      if (sessionId) body.session_id = sessionId;
+      const body = { message: text, bot: CHAT_BOT, session_id: sessionId };
 
       const res = await fetch(api("/chat"), {
         method: "POST",
@@ -185,13 +235,15 @@ function App() {
     } finally {
       setLoading(false);
     }
-  }, [input, loading, sessionId]);
+  }, [input, loading, sessionId, bootLoading]);
 
   const newChat = () => {
-    setSessionId(null);
-    setMessages([]);
-    setError(null);
     setInput("");
+    setError(null);
+    setBootError(null);
+    setMessages(buildProvisionalWelcome());
+    setSessionId(null);
+    startChatSession();
   };
 
   const onKeyDown = (e) => {
@@ -212,11 +264,24 @@ function App() {
               <p className="chat-top-sub">We typically reply right away</p>
             </div>
           </div>
-          <button type="button" className="chat-top-new" onClick={newChat}>
+          <button
+            type="button"
+            className="chat-top-new"
+            onClick={newChat}
+            disabled={bootLoading}
+          >
             New chat
           </button>
         </header>
 
+        {bootError && (
+          <div className="chat-alert" role="alert">
+            {bootError}{" "}
+            <button type="button" className="chat-alert-retry" onClick={startChatSession}>
+              Retry
+            </button>
+          </div>
+        )}
         {error && (
           <div className="chat-alert" role="alert">
             {error}
@@ -225,20 +290,9 @@ function App() {
 
         <main className="chat-body">
           <ul className="chat-stream" aria-live="polite">
-            {messages.length === 0 && (
-              <li className="chat-empty">
-                <div className="chat-empty-avatar">
-                  <img src={BOT_AVATAR_URL} alt="" width={56} height={56} />
-                </div>
-                <p className="chat-empty-title">Start a conversation</p>
-                <p className="chat-empty-text">
-                  Ask about charter, aircraft sales, financing, or anything AeroMaverick can help with.
-                </p>
-              </li>
-            )}
             {messages.map((msg, i) =>
               msg.role === "assistant" ? (
-                <li key={i} className="msg msg--bot">
+                <li key={`${msg.ts}-${i}`} className="msg msg--bot">
                   <div className="msg-side">
                     <div className="msg-avatar msg-avatar--bot">
                       <img src={BOT_AVATAR_URL} alt="" width={40} height={40} />
@@ -247,12 +301,14 @@ function App() {
                       {formatMsgTime(msg.ts)}
                     </time>
                   </div>
-                  <div className="msg-bubble msg-bubble--bot">
+                  <div
+                    className={`msg-bubble msg-bubble--bot${bootLoading && !sessionId && i === 0 ? " msg-bubble--bootstrapping" : ""}`}
+                  >
                     <AssistantMessageBody text={msg.content} />
                   </div>
                 </li>
               ) : (
-                <li key={i} className="msg msg--user">
+                <li key={`${msg.ts}-${i}`} className="msg msg--user">
                   <div className="msg-bubble msg-bubble--user">
                     <p className="msg-text">{msg.content}</p>
                     <time className="msg-time msg-time--inline">{formatMsgTime(msg.ts)}</time>
@@ -296,7 +352,7 @@ function App() {
               onKeyDown={onKeyDown}
               placeholder="Type a message"
               rows={1}
-              disabled={loading}
+              disabled={loading || bootLoading || !sessionId}
               aria-label="Type a message"
             />
             <span className="chat-pill-icon chat-pill-icon--muted" aria-hidden>
@@ -307,7 +363,7 @@ function App() {
             type="button"
             className="chat-fab"
             onClick={send}
-            disabled={loading || !input.trim()}
+            disabled={loading || bootLoading || !sessionId || !input.trim()}
             aria-label="Send"
           >
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
