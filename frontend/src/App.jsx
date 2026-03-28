@@ -23,6 +23,101 @@ function formatMsgTime(ts) {
   }
 }
 
+/** Renders **bold** and bullet / numbered lists so assistant replies are scannable (matches backend FORMATTING rules). */
+function inlineFormat(str) {
+  const parts = String(str).split(/(\*\*[^*]+\*\*)/g);
+  return parts.map((part, idx) => {
+    const m = part.match(/^\*\*(.+)\*\*$/);
+    if (m) return <strong key={idx}>{m[1]}</strong>;
+    return <span key={idx}>{part}</span>;
+  });
+}
+
+function AssistantMessageBody({ text }) {
+  const raw = String(text || "");
+  const lines = raw.split("\n");
+  const blocks = [];
+  let i = 0;
+
+  const flushList = (items, ordered) => {
+    if (!items.length) return;
+    const Tag = ordered ? "ol" : "ul";
+    const cls = ordered ? "msg-ol" : "msg-ul";
+    blocks.push(
+      <Tag key={`list-${blocks.length}`} className={cls}>
+        {items.map((item, j) => (
+          <li key={j} className="msg-li">
+            {inlineFormat(item)}
+          </li>
+        ))}
+      </Tag>
+    );
+  };
+
+  let listItems = [];
+  let ordered = false;
+  const isBullet = (s) => /^[-*•]\s/.test(s);
+  const isNumbered = (s) => /^\d+\.\s/.test(s);
+
+  while (i < lines.length) {
+    const trimmed = lines[i].trim();
+    if (!trimmed) {
+      if (listItems.length) {
+        flushList(listItems, ordered);
+        listItems = [];
+        ordered = false;
+      }
+      i++;
+      continue;
+    }
+    if (isBullet(trimmed)) {
+      if (listItems.length && ordered) {
+        flushList(listItems, true);
+        listItems = [];
+        ordered = false;
+      }
+      listItems.push(trimmed.replace(/^[-*•]\s+/, ""));
+      i++;
+      continue;
+    }
+    if (isNumbered(trimmed)) {
+      if (listItems.length && !ordered) {
+        flushList(listItems, false);
+        listItems = [];
+      }
+      ordered = true;
+      listItems.push(trimmed.replace(/^\d+\.\s+/, ""));
+      i++;
+      continue;
+    }
+    if (listItems.length) {
+      flushList(listItems, ordered);
+      listItems = [];
+      ordered = false;
+    }
+    const paraLines = [trimmed];
+    i++;
+    while (i < lines.length) {
+      const t = lines[i].trim();
+      if (!t || isBullet(t) || isNumbered(t)) break;
+      paraLines.push(t);
+      i++;
+    }
+    blocks.push(
+      <p key={`p-${blocks.length}`} className="msg-para">
+        {inlineFormat(paraLines.join(" "))}
+      </p>
+    );
+  }
+  if (listItems.length) flushList(listItems, ordered);
+
+  if (blocks.length === 0) {
+    return <p className="msg-text msg-text--fallback">{raw || " "}</p>;
+  }
+
+  return <div className="msg-rich">{blocks}</div>;
+}
+
 function App() {
   const [sessionId, setSessionId] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -153,7 +248,7 @@ function App() {
                     </time>
                   </div>
                   <div className="msg-bubble msg-bubble--bot">
-                    <p className="msg-text">{msg.content}</p>
+                    <AssistantMessageBody text={msg.content} />
                   </div>
                 </li>
               ) : (

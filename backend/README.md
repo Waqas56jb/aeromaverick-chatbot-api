@@ -4,6 +4,8 @@ Node.js + Express backend: `/chat`, `/config`, `/health`, `/admin/*`, `/leads`, 
 
 **Vercel `FUNCTION_INVOCATION_FAILED`:** see **`VERCEL_DEBUG_PROMPT.md`** for where logs live, config reference, and a **copy-paste prompt** for Claude (paste your Runtime log error there).
 
+**Frontend / third-party integration:** see **`API_INTEGRATION.md`** (base URL, `/chat`, `/config`, `/health`, `/admin/*`, payloads, responses).
+
 ---
 
 ## Deploy on Vercel (Root Directory = `backend`)

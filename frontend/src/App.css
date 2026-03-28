@@ -304,6 +304,55 @@ body {
   color: var(--text);
 }
 
+/* Assistant structured content (paragraphs, lists, **bold**) */
+.msg-rich {
+  font-size: 0.9rem;
+  line-height: 1.55;
+  color: var(--text);
+  word-break: break-word;
+}
+
+.msg-rich .msg-para {
+  margin: 0 0 0.65rem;
+}
+
+.msg-rich .msg-para:last-child {
+  margin-bottom: 0;
+}
+
+.msg-rich .msg-ul,
+.msg-rich .msg-ol {
+  margin: 0 0 0.65rem;
+  padding-left: 1.2rem;
+}
+
+.msg-rich .msg-ul:last-child,
+.msg-rich .msg-ol:last-child {
+  margin-bottom: 0;
+}
+
+.msg-rich .msg-li {
+  margin-bottom: 0.4rem;
+  padding-left: 0.15rem;
+}
+
+.msg-rich .msg-li:last-child {
+  margin-bottom: 0;
+}
+
+.msg-rich .msg-ul {
+  list-style-type: disc;
+}
+
+.msg-rich .msg-ol {
+  list-style-type: decimal;
+}
+
+.msg-rich strong {
+  font-weight: 600;
+  color: #fafafa;
+}
+
 .msg-time--inline {
   display: block;
   margin-top: 0.35rem;
