@@ -1,6 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "installCommand": "echo 'static'",
-  "buildCommand": "node -e \"require('fs').cpSync('frontend','public',{recursive:true})\"",
-  "outputDirectory": "public"
+  "installCommand": "cd frontend && npm install",
+  "buildCommand": "cd frontend && npm run build",
+  "outputDirectory": "frontend/dist"
 }

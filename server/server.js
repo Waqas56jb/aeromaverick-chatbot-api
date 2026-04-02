@@ -587,6 +587,12 @@ app.post("/api/chat", async (req, res) => {
     return res.status(400).json({ error: "Invalid messages array" });
   }
 
+  if (!openai) {
+    return res.status(503).json({
+      error: "OpenAI client failed to load. Set OPENAI_API_KEY in server/.env and restart the server.",
+    });
+  }
+
   // Limit conversation history to last 20 messages to control tokens
   const recentMessages = messages.slice(-20);
 
