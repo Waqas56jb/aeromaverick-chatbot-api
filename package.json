@@ -2,10 +2,10 @@
   "name": "aeromaverick-chatbot",
   "version": "1.0.0",
   "description": "AeroMaverick AI Aviation Concierge Chatbot",
-  "main": "backend/server.js",
+  "main": "server/server.js",
   "scripts": {
-    "start": "node backend/server.js",
-    "dev": "nodemon backend/server.js"
+    "start": "node server/server.js",
+    "dev": "nodemon server/server.js"
   },
   "dependencies": {
     "cors": "^2.8.5",

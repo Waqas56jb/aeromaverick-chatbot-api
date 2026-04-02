@@ -1,4 +1,6 @@
-require("dotenv").config();
+const path = require("path");
+const { spawn } = require("child_process");
+require("dotenv").config({ path: path.join(__dirname, "..", ".env") });
 const express = require("express");
 const cors = require("cors");
 
@@ -10,15 +12,13 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-
-// Initialize OpenAI gracefully
 let openai;
 try {
-    openai = new OpenAI({
-        apiKey: process.env.OPENAI_API_KEY || "dummy_key_to_prevent_crash"
-    });
+  openai = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY || "dummy_key_to_prevent_crash",
+  });
 } catch (error) {
-    console.error("Failed to initialize OpenAI:", error);
+  console.error("Failed to initialize OpenAI:", error);
 }
 
 // ============================================================
@@ -582,70 +582,90 @@ Remember: You are the face of AeroMaverick's premium aviation brand. Every respo
 // CHAT ENDPOINT
 // ============================================================
 app.post("/api/chat", async (req, res) => {
-    const { messages } = req.body;
+  const { messages } = req.body;
 
-    if (!messages || !Array.isArray(messages)) {
-        return res.status(400).json({ error: "Invalid messages array" });
+  if (!messages || !Array.isArray(messages)) {
+    return res.status(400).json({ error: "Invalid messages array" });
+  }
+
+  // Limit conversation history to last 20 messages to control tokens
+  const recentMessages = messages.slice(-20);
+
+  try {
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4o",
+      messages: [
+        {
+          role: "system",
+          content: AEROMAVERICK_SYSTEM_PROMPT,
+        },
+        ...recentMessages,
+      ],
+      max_tokens: 1000,
+      temperature: 0.7,
+      presence_penalty: 0.1,
+      frequency_penalty: 0.1,
+    });
+
+    const reply = completion.choices[0].message.content;
+    res.json({ reply });
+  } catch (error) {
+    console.error("OpenAI API error:", error);
+    if (error.status === 401) {
+      res.status(401).json({ error: "Invalid OpenAI API key. Please check your .env file." });
+    } else if (error.status === 429) {
+      res.status(429).json({ error: "Rate limit reached. Please try again shortly." });
+    } else {
+      res.status(500).json({ error: "Something went wrong. Please try again." });
     }
-
-    // Limit conversation history to last 20 messages to control tokens
-    const recentMessages = messages.slice(-20);
-
-    try {
-        const completion = await openai.chat.completions.create({
-            model: "gpt-4o",
-            messages: [
-                {
-                    role: "system",
-                    content: AEROMAVERICK_SYSTEM_PROMPT,
-                },
-                ...recentMessages,
-            ],
-            max_tokens: 1000,
-            temperature: 0.7,
-            presence_penalty: 0.1,
-            frequency_penalty: 0.1,
-        });
-
-        const reply = completion.choices[0].message.content;
-        res.json({ reply });
-    } catch (error) {
-        console.error("OpenAI API error:", error);
-        if (error.status === 401) {
-            res.status(401).json({ error: "Invalid OpenAI API key. Please check your .env file." });
-        } else if (error.status === 429) {
-            res.status(429).json({ error: "Rate limit reached. Please try again shortly." });
-        } else {
-            res.status(500).json({ error: "Something went wrong. Please try again." });
-        }
-    }
+  }
 });
 
 // ============================================================
 // LEAD CAPTURE ENDPOINT
 // ============================================================
 app.post("/api/lead", async (req, res) => {
-    const { name, email, phone, interest, message } = req.body;
-    // In production: save to database or send to CRM / email
-    console.log("New Lead Captured:", { name, email, phone, interest, message, timestamp: new Date().toISOString() });
-    res.json({ success: true, message: "Lead captured successfully" });
+  const { name, email, phone, interest, message } = req.body;
+  // In production: save to database or send to CRM / email
+  console.log("New Lead Captured:", { name, email, phone, interest, message, timestamp: new Date().toISOString() });
+  res.json({ success: true, message: "Lead captured successfully" });
 });
 
 // ============================================================
 // HEALTH CHECK
 // ============================================================
 app.get("/api/health", (req, res) => {
-    res.json({ status: "ok", service: "AeroMaverick Chatbot API", timestamp: new Date().toISOString() });
+  res.json({ status: "ok", service: "AeroMaverick Chatbot API", timestamp: new Date().toISOString() });
 });
+
+// ============================================================
+// LOCAL: serve chatbot UI (same origin → /api/chat works)
+// ============================================================
+const frontendDir = path.join(__dirname, "..", "frontend");
+app.use(express.static(frontendDir));
 
 // ============================================================
 // EXPORT FOR VERCEL SERVERLESS + LOCAL DEV
 // ============================================================
 if (require.main === module) {
-    const PORT = process.env.PORT || 3000;
-    app.listen(PORT, () => {
-        console.log(`✈️  AeroMaverick Chatbot Server running on http://localhost:${PORT}`);
-    });
+  const PORT = Number(process.env.PORT) || 3000;
+  app.listen(PORT, () => {
+    const url = `http://localhost:${PORT}`;
+    console.log(`✈️  AeroMaverick Chatbot — ${url}`);
+    if (process.env.OPEN_BROWSER !== "0") {
+      try {
+        if (process.platform === "win32") {
+          spawn("cmd", ["/c", "start", "", url], { detached: true, stdio: "ignore" }).unref();
+        } else if (process.platform === "darwin") {
+          spawn("open", [url], { detached: true, stdio: "ignore" }).unref();
+        } else {
+          spawn("xdg-open", [url], { detached: true, stdio: "ignore" }).unref();
+        }
+      } catch (_) {
+        /* ignore */
+      }
+    }
+  });
 }
 
 module.exports = app;
