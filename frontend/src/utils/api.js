@@ -1,5 +1,5 @@
 function getApiBase() {
-  return (import.meta.env.VITE_CHATBOT_API_BASE || "").trim().replace(/\/$/, "");
+  return (import.meta.env.VITE_CHATBOT_API_BASE || "https://aeromaverick-chatbot-api.vercel.app").trim().replace(/\/$/, "");
 }
 
 export function apiUrl(path) {
