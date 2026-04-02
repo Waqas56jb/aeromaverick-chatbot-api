@@ -3,6 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- When the UI is static-only (e.g. Vercel/Netlify), set this to your Node API origin (no trailing slash), e.g. https://your-app.onrender.com -->
+  <meta name="chatbot-api-base" content="" />
   <title>AeroMaverick — Aviation Concierge</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -770,6 +772,17 @@
 
   <script>
     // ============================================================
+    // API (same-origin when empty; static deploys must set meta chatbot-api-base)
+    // ============================================================
+    function chatbotApiUrl(path) {
+      const meta = document.querySelector('meta[name="chatbot-api-base"]');
+      const raw = meta && meta.getAttribute('content');
+      const base = raw && raw.trim() ? raw.trim().replace(/\/$/, '') : '';
+      const p = path.startsWith('/') ? path : '/' + path;
+      return base ? base + p : p;
+    }
+
+    // ============================================================
     // STATE
     // ============================================================
     let conversationHistory = [];
@@ -825,7 +838,7 @@
       document.getElementById('send-btn').disabled = true;
 
       try {
-        const response = await fetch('/api/chat', {
+        const response = await fetch(chatbotApiUrl('/api/chat'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ messages: conversationHistory }),

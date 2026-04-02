@@ -11,9 +11,15 @@ app.use(cors());
 app.use(express.json());
 
 
-const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
-});
+// Initialize OpenAI gracefully
+let openai;
+try {
+    openai = new OpenAI({
+        apiKey: process.env.OPENAI_API_KEY || "dummy_key_to_prevent_crash"
+    });
+} catch (error) {
+    console.error("Failed to initialize OpenAI:", error);
+}
 
 // ============================================================
 // AEROMAVERICK MASTER KNOWLEDGE BASE — FULL SYSTEM PROMPT
