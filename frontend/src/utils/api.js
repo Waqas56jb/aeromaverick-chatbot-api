@@ -1,4 +1,6 @@
-import { getApiBase } from "../config.js";
+function getApiBase() {
+  return (import.meta.env.VITE_CHATBOT_API_BASE || "").trim().replace(/\/$/, "");
+}
 
 export function apiUrl(path) {
   const base = getApiBase();
