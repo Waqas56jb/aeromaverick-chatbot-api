@@ -12,7 +12,7 @@ app.use(express.json());
 
 
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
+    apiKey: process.env.OPENAI_API_KEY,
 });
 
 // ============================================================
@@ -576,70 +576,70 @@ Remember: You are the face of AeroMaverick's premium aviation brand. Every respo
 // CHAT ENDPOINT
 // ============================================================
 app.post("/api/chat", async (req, res) => {
-  const { messages } = req.body;
+    const { messages } = req.body;
 
-  if (!messages || !Array.isArray(messages)) {
-    return res.status(400).json({ error: "Invalid messages array" });
-  }
-
-  // Limit conversation history to last 20 messages to control tokens
-  const recentMessages = messages.slice(-20);
-
-  try {
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: [
-        {
-          role: "system",
-          content: AEROMAVERICK_SYSTEM_PROMPT,
-        },
-        ...recentMessages,
-      ],
-      max_tokens: 1000,
-      temperature: 0.7,
-      presence_penalty: 0.1,
-      frequency_penalty: 0.1,
-    });
-
-    const reply = completion.choices[0].message.content;
-    res.json({ reply });
-  } catch (error) {
-    console.error("OpenAI API error:", error);
-    if (error.status === 401) {
-      res.status(401).json({ error: "Invalid OpenAI API key. Please check your .env file." });
-    } else if (error.status === 429) {
-      res.status(429).json({ error: "Rate limit reached. Please try again shortly." });
-    } else {
-      res.status(500).json({ error: "Something went wrong. Please try again." });
+    if (!messages || !Array.isArray(messages)) {
+        return res.status(400).json({ error: "Invalid messages array" });
     }
-  }
+
+    // Limit conversation history to last 20 messages to control tokens
+    const recentMessages = messages.slice(-20);
+
+    try {
+        const completion = await openai.chat.completions.create({
+            model: "gpt-4o",
+            messages: [
+                {
+                    role: "system",
+                    content: AEROMAVERICK_SYSTEM_PROMPT,
+                },
+                ...recentMessages,
+            ],
+            max_tokens: 1000,
+            temperature: 0.7,
+            presence_penalty: 0.1,
+            frequency_penalty: 0.1,
+        });
+
+        const reply = completion.choices[0].message.content;
+        res.json({ reply });
+    } catch (error) {
+        console.error("OpenAI API error:", error);
+        if (error.status === 401) {
+            res.status(401).json({ error: "Invalid OpenAI API key. Please check your .env file." });
+        } else if (error.status === 429) {
+            res.status(429).json({ error: "Rate limit reached. Please try again shortly." });
+        } else {
+            res.status(500).json({ error: "Something went wrong. Please try again." });
+        }
+    }
 });
 
 // ============================================================
 // LEAD CAPTURE ENDPOINT
 // ============================================================
 app.post("/api/lead", async (req, res) => {
-  const { name, email, phone, interest, message } = req.body;
-  // In production: save to database or send to CRM / email
-  console.log("New Lead Captured:", { name, email, phone, interest, message, timestamp: new Date().toISOString() });
-  res.json({ success: true, message: "Lead captured successfully" });
+    const { name, email, phone, interest, message } = req.body;
+    // In production: save to database or send to CRM / email
+    console.log("New Lead Captured:", { name, email, phone, interest, message, timestamp: new Date().toISOString() });
+    res.json({ success: true, message: "Lead captured successfully" });
 });
 
 // ============================================================
 // HEALTH CHECK
 // ============================================================
 app.get("/api/health", (req, res) => {
-  res.json({ status: "ok", service: "AeroMaverick Chatbot API", timestamp: new Date().toISOString() });
+    res.json({ status: "ok", service: "AeroMaverick Chatbot API", timestamp: new Date().toISOString() });
 });
 
 // ============================================================
 // EXPORT FOR VERCEL SERVERLESS + LOCAL DEV
 // ============================================================
 if (require.main === module) {
-  const PORT = process.env.PORT || 3000;
-  app.listen(PORT, () => {
-    console.log(`✈️  AeroMaverick Chatbot Server running on http://localhost:${PORT}`);
-  });
+    const PORT = process.env.PORT || 3000;
+    app.listen(PORT, () => {
+        console.log(`✈️  AeroMaverick Chatbot Server running on http://localhost:${PORT}`);
+    });
 }
 
 module.exports = app;
