@@ -3,6 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- Deployed chat UI: set this to your API origin (no trailing slash), e.g. https://your-api.onrender.com — Local test with Live Server: http://localhost:3000 -->
+  <meta name="chatbot-api-base" content="" />
   <title>AeroMaverick — Aviation Concierge</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -770,6 +772,32 @@
 
   <script>
     // ============================================================
+    // API base: meta chatbot-api-base, or same-origin when empty (proxy / same server)
+    // ============================================================
+    function apiUrl(path) {
+      const meta = document.querySelector('meta[name="chatbot-api-base"]');
+      const raw = meta && meta.getAttribute('content');
+      const base = raw && String(raw).trim() ? String(raw).trim().replace(/\/$/, '') : '';
+      const p = path.startsWith('/') ? path : '/' + path;
+      return base ? base + p : p;
+    }
+
+    async function parseErrorResponse(response) {
+      const text = await response.text();
+      try {
+        const data = JSON.parse(text);
+        if (data.error && typeof data.error === 'object' && data.error.message) {
+          return data.error.message;
+        }
+        if (typeof data.error === 'string') return data.error;
+        if (data.message) return data.message;
+      } catch (_) {
+        /* not JSON */
+      }
+      return text || 'Server error';
+    }
+
+    // ============================================================
     // STATE
     // ============================================================
     let conversationHistory = [];
@@ -825,15 +853,14 @@
       document.getElementById('send-btn').disabled = true;
 
       try {
-        const response = await fetch('/api/chat', {
+        const response = await fetch(apiUrl('/api/chat'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ messages: conversationHistory }),
         });
 
         if (!response.ok) {
-          const err = await response.json();
-          throw new Error(err.error || 'Server error');
+          throw new Error(await parseErrorResponse(response));
         }
 
         const data = await response.json();

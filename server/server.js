@@ -1,6 +1,6 @@
 const path = require("path");
-const { spawn } = require("child_process");
 require("dotenv").config({ path: path.join(__dirname, "..", ".env") });
+require("dotenv").config({ path: path.join(__dirname, ".env") });
 const express = require("express");
 const cors = require("cors");
 
@@ -638,33 +638,21 @@ app.get("/api/health", (req, res) => {
   res.json({ status: "ok", service: "AeroMaverick Chatbot API", timestamp: new Date().toISOString() });
 });
 
-// ============================================================
-// LOCAL: serve chatbot UI (same origin → /api/chat works)
-// ============================================================
-const frontendDir = path.join(__dirname, "..", "frontend");
-app.use(express.static(frontendDir));
+app.get("/", (req, res) => {
+  res.json({
+    service: "AeroMaverick Chatbot API",
+    docs: "POST /api/chat with body { messages: [...] }",
+    health: "/api/health",
+  });
+});
 
 // ============================================================
-// EXPORT FOR VERCEL SERVERLESS + LOCAL DEV
+// LOCAL / RENDER / RAILWAY: API only (frontend is deployed separately)
 // ============================================================
 if (require.main === module) {
   const PORT = Number(process.env.PORT) || 3000;
   app.listen(PORT, () => {
-    const url = `http://localhost:${PORT}`;
-    console.log(`✈️  AeroMaverick Chatbot — ${url}`);
-    if (process.env.OPEN_BROWSER !== "0") {
-      try {
-        if (process.platform === "win32") {
-          spawn("cmd", ["/c", "start", "", url], { detached: true, stdio: "ignore" }).unref();
-        } else if (process.platform === "darwin") {
-          spawn("open", [url], { detached: true, stdio: "ignore" }).unref();
-        } else {
-          spawn("xdg-open", [url], { detached: true, stdio: "ignore" }).unref();
-        }
-      } catch (_) {
-        /* ignore */
-      }
-    }
+    console.log(`✈️  AeroMaverick API — http://localhost:${PORT}/api/health`);
   });
 }
 
