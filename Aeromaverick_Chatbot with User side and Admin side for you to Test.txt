@@ -1,7 +1,0 @@
-User Side :
-
-           https://aeromaverick-chatbot-api-fes5.vercel.app/
-
-Admin-Penel:
-           
-           https://aeromaverick-chatbot-api.vercel.app/
