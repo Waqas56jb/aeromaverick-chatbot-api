@@ -84,7 +84,7 @@ header {
   display: flex;
   align-items: center;
   gap: 16px;
-  padding: 18px 28px;
+  padding: max(18px, env(safe-area-inset-top, 0px)) max(28px, env(safe-area-inset-right, 0px)) 18px max(28px, env(safe-area-inset-left, 0px));
   background: linear-gradient(180deg, rgba(9,17,31,0.98) 0%, rgba(9,17,31,0.85) 100%);
   border-bottom: 1px solid var(--gold-border);
   backdrop-filter: blur(20px);

@@ -128,7 +128,7 @@ export function ChatApp() {
         )}
         {!showWelcome &&
           messages.map((msg) => <MessageBubble key={msg.id} role={msg.role} text={msg.text} time={msg.time} />)}
-        <TypingIndicator visible={isTyping} />
+        <TypingIndicator visible={isTyping && !showWelcome} />
       </div>
       <InputArea
         value={input}
