@@ -23,6 +23,8 @@ export function ChatApp() {
   const messagesRef = useRef(null);
   const inputRef = useRef(null);
 
+  const goHome = () => setShowWelcome(true);
+
   const scrollToBottom = useCallback(() => {
     const el = messagesRef.current;
     if (el) el.scrollTop = el.scrollHeight;
@@ -105,10 +107,25 @@ export function ChatApp() {
 
   return (
     <>
-      <Header onClear={clearChat} />
+      <Header onClear={clearChat} showBack={!showWelcome} onBack={goHome} />
       <QuickPrompts onQuick={sendQuick} disabled={isTyping} />
       <div id="messages" ref={messagesRef}>
-        {showWelcome && <WelcomePanel />}
+        {showWelcome && (
+          <>
+            <WelcomePanel onSelectTopic={sendQuick} disabled={isTyping} />
+            {messages.length > 0 && (
+              <div style={{ display: 'flex', justifyContent: 'center', padding: '8px 0 16px' }}>
+                <button
+                  type="button"
+                  className="continue-chat-btn"
+                  onClick={() => setShowWelcome(false)}
+                >
+                  💬 Continue Conversation →
+                </button>
+              </div>
+            )}
+          </>
+        )}
         {!showWelcome &&
           messages.map((msg) => <MessageBubble key={msg.id} role={msg.role} text={msg.text} time={msg.time} />)}
         <TypingIndicator visible={isTyping} />

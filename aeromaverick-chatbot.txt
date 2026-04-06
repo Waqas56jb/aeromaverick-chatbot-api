@@ -1,0 +1,71 @@
+AeroMaverick Chatbot API - Integration Guide
+=============================================
+Base URL (Production): https://aeromaverick-chatbot-api.vercel.app
+
+
+1. Chat Endpoint
+----------------
+Endpoint: POST /api/chat
+Description: Submits conversation history to the chatbot and returns the AI's response.
+Headers: 
+  Content-Type: application/json
+
+Payload Example:
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": "Hello, I want to learn about aircraft financing."
+    }
+  ]
+}
+* Note: 'messages' should be an array of objects. Roles can be "user" or "assistant". Pass the whole conversation history for context, or just the latest message. (Backend limits history to the last 20 messages automatically).
+
+Success Response (200 OK):
+{
+  "reply": "Hello! We connect you with our aviation financing partners..."
+}
+
+Common Error Responses:
+- 400 Bad Request: { "error": "Invalid messages array" }
+- 429 Too Many Requests: { "error": "Rate limit reached. Please try again shortly." }
+- 500 Internal Error: { "error": "Something went wrong. Please try again." }
+
+
+2. Lead Capture Endpoint
+------------------------
+Endpoint: POST /api/lead
+Description: Captures user contact details and intent to save as a lead.
+Headers: 
+  Content-Type: application/json
+
+Payload Example:
+{
+  "name": "John Doe",
+  "email": "john.doe@example.com",
+  "phone": "+1234567890",
+  "interest": "buy",
+  "message": "Looking for a lightly used Cessna 172."
+}
+* Note: All fields in the payload are optional but expected as strings.
+
+Success Response (200 OK):
+{
+  "success": true,
+  "message": "Lead captured successfully"
+}
+
+
+3. Health Check Endpoint
+------------------------
+Endpoint: GET /api/health
+Description: Used to quickly check if the backend is online.
+Headers: None
+Payload: None
+
+Success Response (200 OK):
+{
+  "status": "ok",
+  "service": "AeroMaverick Chatbot API",
+  "timestamp": "2026-04-03T02:26:00.000Z"
+}

@@ -12,6 +12,9 @@ export function InputArea({ value, onChange, onSend, disabled, inputRef: externa
 
   return (
     <div id="input-area">
+      <p className="input-assistant-tagline" role="status">
+        Ask Anything – Your AI Assistant
+      </p>
       <div className="input-row">
         <textarea
           ref={inputRef}

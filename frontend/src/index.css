@@ -121,10 +121,29 @@ header::after {
   overflow: hidden;
 }
 
+.logo-icon--branded {
+  background: linear-gradient(180deg, rgba(21,34,56,0.95) 0%, rgba(9,17,31,0.98) 100%);
+  border: 1px solid var(--gold-border);
+  box-shadow: 0 4px 18px rgba(0,0,0,0.45), 0 0 0 1px rgba(201,168,76,0.08);
+}
+
 .logo-icon::before {
   content: '';
   position: absolute; inset: 0;
   background: linear-gradient(135deg, rgba(255,255,255,0.2) 0%, transparent 60%);
+}
+
+.logo-icon--branded::before {
+  opacity: 0.12;
+}
+
+.logo-img {
+  width: 38px;
+  height: 38px;
+  object-fit: contain;
+  position: relative;
+  z-index: 1;
+  display: block;
 }
 
 .logo-text {
@@ -278,9 +297,24 @@ header::after {
 }
 
 .welcome-plane {
-  font-size: 64px;
-  filter: drop-shadow(0 0 20px rgba(201,168,76,0.5));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  filter: drop-shadow(0 0 24px rgba(201,168,76,0.35));
   animation: float 4s ease-in-out infinite;
+  padding: 32px 24px 0;
+  margin: 0;
+  box-sizing: border-box;
+}
+
+.welcome-logo {
+  width: min(120px, 28vw);
+  height: auto;
+  max-height: 120px;
+  object-fit: contain;
+  display: block;
+  padding: 0;
+  margin: 0;
 }
 
 @keyframes float {
@@ -325,6 +359,34 @@ header::after {
   font-weight: 500;
 }
 
+button.badge.welcome-topic-btn {
+  font-family: var(--font-body);
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s, color 0.2s, transform 0.15s;
+}
+
+button.badge.welcome-topic-btn:hover {
+  background: rgba(201,168,76,0.22);
+  border-color: var(--gold);
+  color: var(--gold-light);
+  transform: translateY(-1px);
+}
+
+button.badge.welcome-topic-btn:focus-visible {
+  outline: 2px solid var(--gold-light);
+  outline-offset: 2px;
+}
+
+button.badge.welcome-topic-btn:active {
+  transform: translateY(0);
+}
+
+button.badge.welcome-topic-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+}
+
 /* ==============================
    MESSAGE BUBBLES
 ============================== */
@@ -355,8 +417,18 @@ header::after {
 }
 
 .msg.bot .avatar {
-  background: linear-gradient(135deg, var(--gold), var(--gold-light));
-  box-shadow: 0 4px 14px rgba(201,168,76,0.35);
+  background: linear-gradient(180deg, rgba(21,34,56,0.95) 0%, rgba(9,17,31,0.98) 100%);
+  border: 1px solid var(--gold-border);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.35);
+  padding: 4px;
+  overflow: hidden;
+}
+
+.msg.bot .avatar .avatar-logo {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
 }
 
 .msg.user .avatar {
@@ -445,13 +517,22 @@ header::after {
   width: 36px;
   height: 36px;
   border-radius: 10px;
-  background: linear-gradient(135deg, var(--gold), var(--gold-light));
+  background: linear-gradient(180deg, rgba(21,34,56,0.95) 0%, rgba(9,17,31,0.98) 100%);
+  border: 1px solid var(--gold-border);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 16px;
   flex-shrink: 0;
-  box-shadow: 0 4px 14px rgba(201,168,76,0.35);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.35);
+  padding: 4px;
+  overflow: hidden;
+}
+
+.typing-avatar-logo {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
 }
 
 .typing-bubble {
@@ -491,6 +572,19 @@ header::after {
   border-top: 1px solid rgba(201,168,76,0.15);
   backdrop-filter: blur(20px);
   flex-shrink: 0;
+}
+
+.input-assistant-tagline {
+  text-align: center;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 500;
+  margin: 0 0 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(201,168,76,0.14);
+  line-height: 1.5;
 }
 
 .input-row {
@@ -600,17 +694,96 @@ header::after {
   to   { opacity: 1; transform: translateX(-50%) translateY(0); }
 }
 
+/* ── BACK / HOME BUTTON ── */
+.back-home-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(201,168,76,0.1);
+  border: 1px solid var(--gold-border);
+  border-radius: 8px;
+  padding: 6px 13px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--gold);
+  cursor: pointer;
+  font-family: var(--font-body);
+  transition: all 0.2s;
+  white-space: nowrap;
+  min-height: 34px;
+  flex-shrink: 0;
+}
+.back-home-btn:hover {
+  background: rgba(201,168,76,0.2);
+  border-color: var(--gold-light);
+  color: var(--gold-light);
+}
+
+/* ── CONTINUE CHAT BUTTON ── */
+.continue-chat-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: linear-gradient(135deg, var(--gold), var(--gold-light));
+  border: none;
+  border-radius: 10px;
+  padding: 11px 24px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--navy);
+  cursor: pointer;
+  font-family: var(--font-body);
+  transition: all 0.25s;
+  box-shadow: 0 4px 16px rgba(201,168,76,0.3);
+}
+.continue-chat-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(201,168,76,0.45);
+}
+
+/* ── FIX APP LAYOUT FOR MOBILE KEYBOARD ── */
+#app {
+  position: fixed;
+  inset: 0;
+  height: 100%;
+}
+
+html, body {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+}
+
+#root {
+  height: 100%;
+}
+
 /* ==============================
    MOBILE RESPONSIVE
 ============================== */
 @media (max-width: 600px) {
-  header { padding: 14px 16px; }
-  #messages { padding: 20px 14px; gap: 16px; }
-  #input-area { padding: 12px 14px 16px; }
-  #quick-prompts { padding: 8px 14px; }
-  #welcome h1 { font-size: 32px; }
-  .bubble { font-size: 14px; padding: 12px 15px; }
-  .logo-text .brand { font-size: 22px; }
+  header { padding: 12px 14px; flex-wrap: nowrap; }
+  .header-right { gap: 6px; flex-shrink: 0; }
+  .logo-text .brand { font-size: 18px; }
+  .logo-text .tagline { display: none; }
+  #messages { padding: 16px 12px; gap: 14px; }
+  #input-area { padding: 10px 12px 14px; flex-shrink: 0; }
+  .input-assistant-tagline {
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    margin-bottom: 10px;
+  }
+  #quick-prompts { padding: 8px 12px; }
+  #welcome h1 { font-size: 28px; }
+  .bubble { font-size: 14px; padding: 12px 14px; }
+  #user-input { font-size: 16px; } /* Prevents iOS auto-zoom */
+  .back-home-btn { font-size: 11px; padding: 5px 9px; }
+  .clear-btn { font-size: 11px; padding: 6px 10px; }
+}
+
+@media (max-width: 380px) {
+  .logo-text { display: none; }
+  .back-home-btn { font-size: 10.5px; padding: 5px 8px; }
 }
 
 /* ==============================

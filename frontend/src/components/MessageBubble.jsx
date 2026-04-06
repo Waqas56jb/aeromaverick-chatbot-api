@@ -1,12 +1,17 @@
 import { formatMessage } from "../utils/formatMessage.js";
 
 export function MessageBubble({ role, text, time }) {
-  const avatarEmoji = role === "bot" ? "✈" : "👤";
   const label = role === "bot" ? "AeroMaverick AI" : "You";
 
   return (
     <div className={`msg ${role}`}>
-      <div className="avatar">{avatarEmoji}</div>
+      <div className="avatar">
+        {role === "bot" ? (
+          <img src="/logo.png" alt="" className="avatar-logo" width={28} height={28} decoding="async" />
+        ) : (
+          "👤"
+        )}
+      </div>
       <div className="bubble-wrap">
         <span className="sender-label">{label}</span>
         <div className="bubble" dangerouslySetInnerHTML={{ __html: formatMessage(text) }} />
