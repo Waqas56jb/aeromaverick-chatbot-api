@@ -9,7 +9,9 @@ export function MessageBubble({ role, text, time }) {
         {role === "bot" ? (
           <img src="/logo.png" alt="" className="avatar-logo" width={28} height={28} decoding="async" />
         ) : (
-          "👤"
+          <span className="user-avatar-initial" aria-hidden>
+            U
+          </span>
         )}
       </div>
       <div className="bubble-wrap">

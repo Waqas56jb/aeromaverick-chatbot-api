@@ -9,7 +9,7 @@ export function ErrorToast({ message, onHide }) {
 
   return (
     <div id="error-toast" style={{ display: message ? "block" : "none" }}>
-      {message ? `⚠ ${message}` : ""}
+      {message ? message : ""}
     </div>
   );
 }
