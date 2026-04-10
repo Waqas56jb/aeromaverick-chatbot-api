@@ -24,6 +24,7 @@ export function ChatApp() {
   const inputRef = useRef(null);
 
   const goHome = () => setShowWelcome(true);
+  const backToChat = () => setShowWelcome(false);
 
   const scrollToBottom = useCallback(() => {
     const el = messagesRef.current;
@@ -107,7 +108,13 @@ export function ChatApp() {
 
   return (
     <>
-      <Header onClear={clearChat} showBack={!showWelcome} onBack={goHome} />
+      <Header
+        onClear={clearChat}
+        showBackToChat={showWelcome && messages.length > 0}
+        onBackToChat={backToChat}
+        showHome={!showWelcome && messages.length > 0}
+        onGoHome={goHome}
+      />
       <QuickPrompts onQuick={sendQuick} disabled={isTyping} />
       <div id="messages" ref={messagesRef}>
         {showWelcome && (

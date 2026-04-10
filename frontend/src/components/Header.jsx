@@ -1,4 +1,4 @@
-export function Header({ onClear, showBack, onBack }) {
+export function Header({ onClear, showBackToChat, onBackToChat, showHome, onGoHome }) {
   return (
     <header>
       <div className="logo-wrap">
@@ -11,8 +11,13 @@ export function Header({ onClear, showBack, onBack }) {
         </div>
       </div>
       <div className="header-right">
-        {showBack && (
-          <button className="back-home-btn" type="button" onClick={onBack} title="Back to Home">
+        {showBackToChat && (
+          <button className="back-home-btn" type="button" onClick={onBackToChat} title="Back to conversation">
+            ← Back
+          </button>
+        )}
+        {showHome && (
+          <button className="back-home-btn back-home-btn--home" type="button" onClick={onGoHome} title="Home">
             ← Home
           </button>
         )}
