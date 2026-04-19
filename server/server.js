@@ -637,6 +637,46 @@ app.post("/api/lead", async (req, res) => {
 });
 
 // ============================================================
+// ============================================================
+// REALTIME VOICE AGENT — EPHEMERAL TOKEN
+// ============================================================
+app.post("/api/realtime-token", async (req, res) => {
+  try {
+    const response = await fetch("https://api.openai.com/v1/realtime/sessions", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${process.env.OPENAI_API_KEY}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "gpt-4o-realtime-preview-2024-12-17",
+        voice: "alloy",
+        instructions: `You are AeroMaverick's elite AI aviation concierge — a premium, deeply knowledgeable, human-like assistant for aeromaverick.com.
+
+BEGIN IMMEDIATELY — greet the user the moment you connect:
+Say: "Welcome to AeroMaverick! I'm your aviation AI concierge. Whether you're buying, selling, chartering, or need financing — I'm here to help. What can I assist you with today?"
+Then listen. Do not speak again until the user responds.
+
+SPEAK NATURALLY for voice — concise, confident, aviation-native.
+
+KEY FACTS:
+- Website: aeromaverick.com | Email: info@aeromaverick.com
+- Services: Aircraft marketplace, financing, charter, auctions, engine stand rentals, memberships
+- Address: Storey Ave, San Francisco, CA 94129 | Also: 5901 NW 151st St, Miami Lakes, Florida
+- Premium aviation platform — NOT just classifieds
+- Responds in any language — detect and match user's language`,
+        modalities: ["audio", "text"],
+        input_audio_transcription: { model: "whisper-1" },
+        turn_detection: { type: "server_vad", threshold: 0.5, prefix_padding_ms: 300, silence_duration_ms: 600, create_response: true }
+      })
+    });
+    const data = await response.json();
+    if (!response.ok) return res.status(500).json({ error: "Failed to create realtime session", details: data });
+    console.log("🎙️  Voice session created — expires:", data.client_secret?.expires_at);
+    res.json({ token: data.client_secret.value, expires: data.client_secret.expires_at });
+  } catch (err) {
+    console.error("Realtime token endpoint error:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // HEALTH CHECK
 // ============================================================
 app.get("/api/health", (req, res) => {

@@ -106,6 +106,14 @@ export function ChatApp() {
     inputRef.current?.focus();
   }, []);
 
+  const handleVoiceTranscript = (transcript) => {
+    const time = timeNow();
+    const sep = { id: `vs_${Date.now()}`, role: 'bot', text: '🎙️ Voice conversation', time, isVoiceSep: true };
+    const msgs = transcript.map((m, i) => ({ id: `v_${Date.now()}_${i}`, role: m.role === 'assistant' ? 'bot' : 'user', text: m.text, time, fromVoice: true }));
+    setMessages(prev => [...prev, sep, ...msgs]);
+    setShowWelcome(false);
+  };
+
   return (
     <>
       <Header
@@ -143,6 +151,7 @@ export function ChatApp() {
         onSend={sendMessage}
         disabled={sendDisabled}
         inputRef={inputRef}
+        onVoiceTranscript={handleVoiceTranscript}
       />
       <ErrorToast message={errorMsg} onHide={() => setErrorMsg("")} />
     </>
