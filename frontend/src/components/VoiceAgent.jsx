@@ -1,19 +1,14 @@
 ﻿/**
- * Meddozer Voice Agent — Galaxy Widget
- * OpenAI Realtime (WebRTC) via ephemeral client secret + /v1/realtime/calls.
+ * AeroMaverick Voice Agent — Galaxy Widget
+ * GPT-4o Realtime via WebRTC + ephemeral token.
  * Cross-platform: iOS Safari ✅  Android Chrome ✅  Desktop ✅
  */
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 
-const API_BASE = (() => {
-  const url = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_CHATBOT_API_BASE;
-  if (url && String(url).trim()) return String(url).replace(/\/$/, '');
-  return '';
-})();
-const REALTIME_WEBRTC_URL = 'https://api.openai.com/v1/realtime/calls';
-const BOT_LABEL = 'MEDDY';
-const VOICE_LINK_TIMEOUT_MS = 45000;
+const API_BASE       = (import.meta.env.VITE_CHATBOT_API_BASE || 'https://aeromaverick-chatbot-api.vercel.app').trim().replace(/\/$/, '');
+const REALTIME_MODEL = 'gpt-4o-realtime-preview-2024-12-17';
+const BOT_LABEL      = 'AeroMaverick AI';
 
 /* ── Galaxy CSS (self-injected) ─────────────────────────────── */
 const GALAXY_CSS = `
@@ -116,11 +111,8 @@ export function VoiceAgent({ onClose }) {
       case 'input_audio_buffer.speech_started':  setStatus('listening'); break;
       case 'input_audio_buffer.speech_stopped':  setStatus('speaking');  break;
       case 'response.created':                   setStatus('speaking'); aiTextBuf.current = ''; break;
-      case 'response.audio_transcript.delta':
-      case 'response.output_audio_transcript.delta':
-        aiTextBuf.current += ev.delta || ''; break;
+      case 'response.audio_transcript.delta':    aiTextBuf.current += ev.delta || ''; break;
       case 'response.audio_transcript.done':
-      case 'response.output_audio_transcript.done':
         if (aiTextBuf.current.trim()) transcriptRef.current.push({ role: 'assistant', text: aiTextBuf.current.trim() });
         aiTextBuf.current = ''; setStatus('ready'); break;
       case 'conversation.item.input_audio_transcription.completed':
@@ -134,16 +126,6 @@ export function VoiceAgent({ onClose }) {
 
   useEffect(() => {
     let cancelled = false;
-    const linkTimerRef = { current: null };
-    function failVoice(msg) {
-      if (cancelled) return;
-      if (linkTimerRef.current) { clearTimeout(linkTimerRef.current); linkTimerRef.current = null; }
-      try { dcRef.current?.close(); } catch (_) {}
-      try { pcRef.current?.close(); } catch (_) {}
-      streamRef.current?.getTracks().forEach(t => t.stop());
-      setStatus('error');
-      setErr({ icon: '⚠️', text: msg });
-    }
     async function init() {
       try {
         if (!navigator.mediaDevices?.getUserMedia)
@@ -155,10 +137,7 @@ export function VoiceAgent({ onClose }) {
           const body = await tokenRes.text().catch(() => '');
           throw Object.assign(new Error(), { friendly: { icon: '🔌', text: `Voice server error (${tokenRes.status}).\nMake sure the backend is running.\n${body.slice(0, 100)}` } });
         }
-        const tokenPayload = await tokenRes.json();
-        const token = tokenPayload.token || tokenPayload.value;
-        if (!token || typeof token !== 'string')
-          throw Object.assign(new Error(), { friendly: { icon: '🔌', text: 'Voice server did not return a token.' } });
+        const { token } = await tokenRes.json();
         if (cancelled) return;
         let stream;
         try { stream = await getMicrophone(); }
@@ -167,41 +146,21 @@ export function VoiceAgent({ onClose }) {
         streamRef.current = stream;
         const pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }, { urls: 'stun:stun1.l.google.com:19302' }] });
         pcRef.current = pc;
-        pc.onconnectionstatechange = () => {
-          if (cancelled) return;
-          if (pc.connectionState === 'failed')
-            failVoice('Voice WebRTC connection failed. Try another network or disable VPN, then try again.');
-        };
         const audioEl = createAudioEl(); audioElRef.current = audioEl;
         pc.ontrack = async (e) => {
           if (audioEl.srcObject !== e.streams[0]) { audioEl.srcObject = e.streams[0]; try { await audioEl.play(); } catch (pe) { console.warn('[VoiceAgent] play:', pe.message); } }
         };
         stream.getAudioTracks().forEach(t => pc.addTrack(t, stream));
         const dc = pc.createDataChannel('oai-events'); dcRef.current = dc;
-        dc.onopen    = () => {
-          if (cancelled) return;
-          if (linkTimerRef.current) { clearTimeout(linkTimerRef.current); linkTimerRef.current = null; }
-          setStatus('speaking');
-          dc.send(JSON.stringify({ type: 'response.create' }));
-        };
+        dc.onopen    = () => { if (!cancelled) { setStatus('speaking'); dc.send(JSON.stringify({ type: 'response.create' })); } };
         dc.onmessage = (e) => { if (!cancelled) try { handleEvent(JSON.parse(e.data)); } catch (_) {} };
-        dc.onerror   = () => { if (!cancelled) failVoice('Voice data channel error. Please end and try again.'); };
+        dc.onerror   = () => { if (!cancelled) { setStatus('error'); setErr({ icon: '⚠️', text: 'Voice connection lost. Please end and try again.' }); } };
         const offer = await pc.createOffer(); await pc.setLocalDescription(offer);
-        const sdpRes = await fetch(REALTIME_WEBRTC_URL, {
+        const sdpRes = await fetch(`https://api.openai.com/v1/realtime?model=${REALTIME_MODEL}`, {
           method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/sdp' }, body: offer.sdp
         });
-        if (!sdpRes.ok) {
-          const errBody = await sdpRes.text().catch(() => '');
-          throw Object.assign(new Error(), { friendly: { icon: '⚠️', text: `Connection refused by AI server. (${sdpRes.status})\n${errBody.slice(0, 200)}` } });
-        }
+        if (!sdpRes.ok) throw Object.assign(new Error(), { friendly: { icon: '⚠️', text: `Connection refused by AI server. (${sdpRes.status})` } });
         await pc.setRemoteDescription({ type: 'answer', sdp: await sdpRes.text() });
-        if (cancelled) return;
-        setStatus('linking');
-        linkTimerRef.current = setTimeout(() => {
-          if (cancelled) return;
-          if (statusRef.current === 'connecting' || statusRef.current === 'linking')
-            failVoice('Voice link timed out. Check your network and try again.');
-        }, VOICE_LINK_TIMEOUT_MS);
       } catch (err) {
         if (cancelled) return;
         console.error('[VoiceAgent]', err);
@@ -209,10 +168,7 @@ export function VoiceAgent({ onClose }) {
       }
     }
     init();
-    return () => {
-      cancelled = true;
-      if (linkTimerRef.current) clearTimeout(linkTimerRef.current);
-    };
+    return () => { cancelled = true; };
   }, []); // eslint-disable-line
 
   const overlayActive = !['connecting', 'error', 'denied'].includes(status);
@@ -250,7 +206,7 @@ export function VoiceAgent({ onClose }) {
       const ch=(180+hs)%360,core=gCtx.createRadialGradient(CX,CY,0,CX,CY,30+energy*20);core.addColorStop(0,`hsla(${ch},100%,90%,${0.3+energy*0.5})`);core.addColorStop(0.5,`hsla(${(ch+40)%360},90%,70%,${0.1+energy*0.2})`);core.addColorStop(1,`hsla(${(ch+80)%360},80%,50%,0)`);gCtx.save();gCtx.globalCompositeOperation='screen';gCtx.fillStyle=core;gCtx.beginPath();gCtx.arc(CX,CY,30+energy*20,0,Math.PI*2);gCtx.fill();gCtx.restore();
     }
     function loop(t) {
-      const st=statusRef.current,isAct=st==='listening'||st==='ready'||st==='speaking'||st==='linking';
+      const st=statusRef.current,isAct=st==='listening'||st==='ready'||st==='speaking';
       const tgt=isAct?0.55+Math.sin(t*0.004)*0.45:0.1; energyRef.current+=(tgt-energyRef.current)*0.06;
       drawStars(t); drawGalaxy(energyRef.current,t);
       barsRef.current.forEach((b,i)=>{if(!b)return;const base=Math.sin(t*0.003+i*0.35)*0.5+0.5,wave2=Math.sin(t*0.005+i*0.6)*0.3+0.3;const h=isAct?4+(base*wave2+Math.random()*0.3)*44:4+base*10;b.style.height=Math.round(h)+'px';b.style.opacity=String(0.4+(h/48)*0.6);});
@@ -260,9 +216,9 @@ export function VoiceAgent({ onClose }) {
     return () => { cancelAnimationFrame(animRef.current); window.removeEventListener('resize',resize); };
   }, [overlayActive]); // eslint-disable-line
 
-  const isOrbActive = ['listening','ready','speaking','linking'].includes(status);
+  const isOrbActive = ['listening','ready','speaking'].includes(status);
   const statusCls = status==='listening'?'va-gl-status va-lit':status==='speaking'?'va-gl-status va-spk':'va-gl-status';
-  const statusTxt = status==='listening'?'listening...':status==='speaking'?'neural response...':status==='ready'?'tap to speak':status==='linking'?'connecting channel...':'';
+  const statusTxt = status==='listening'?'listening...':status==='speaking'?'neural response...':status==='ready'?'tap to speak':'';
 
   if (status==='connecting') return createPortal(
     <div className="va-gl-overlay"><div className="va-gl-backdrop"/><div className="va-loader-dots" aria-hidden><span/><span/><span/></div></div>, document.body);
