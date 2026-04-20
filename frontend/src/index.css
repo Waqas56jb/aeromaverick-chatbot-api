@@ -34,6 +34,8 @@ html, body {
   background: linear-gradient(180deg, var(--blue-900) 0%, var(--blue-950) 100%);
   color: var(--white);
   overflow: hidden;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
 
 /* Subtle blue texture (no gold / other hues) */
@@ -70,6 +72,7 @@ body::after {
   display: flex;
   flex-direction: column;
   height: 100vh;
+  height: 100dvh;
   max-width: 900px;
   margin: 0 auto;
 }
@@ -275,6 +278,8 @@ header::after {
   background: var(--white);
   min-height: 0;
   scroll-padding-bottom: 32px;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
 }
 
 #messages::-webkit-scrollbar { width: 6px; }
@@ -1247,4 +1252,34 @@ html, body {
   font-size: 11px; background: rgba(14,165,233,0.1); color: #0369a1;
   border: 1px solid rgba(14,165,233,0.3); border-radius: 999px;
   padding: 4px 14px; font-weight: 500;
+}
+/* ── Touch / tap: remove 300ms delay ───────────────────────── */
+button, [role="button"], a, #send-btn, .voice-btn,
+.back-home-btn, .clear-btn, .quick-prompt-btn { touch-action: manipulation; }
+
+/* ── Very small phones (360px) ─────────────────────────────── */
+@media (max-width: 360px) {
+  header { padding: 10px 8px; gap: 6px; }
+  .logo-text { display: none; }
+  .header-right { gap: 4px; }
+  .back-home-btn { font-size: 10px; padding: 4px 7px; }
+  .clear-btn { font-size: 10px; padding: 4px 7px; }
+  #input-area { padding: 8px 8px max(8px, env(safe-area-inset-bottom)); }
+  .input-row { gap: 6px; }
+  #user-input { font-size: 16px !important; min-height: 38px; }
+  #send-btn { width: 42px; height: 42px; }
+  #messages { padding: 12px 8px 24px; gap: 12px; }
+  .bubble { font-size: 13px; padding: 10px 12px; }
+}
+
+/* ── Landscape compact ─────────────────────────────────────── */
+@media (max-height: 480px) and (orientation: landscape) {
+  header { min-height: 44px; padding: 6px 12px; }
+  .logo-text .tagline { display: none; }
+  #messages { padding-top: 8px; padding-bottom: 8px; gap: 10px; }
+  #input-area { padding-top: 6px; padding-bottom: max(6px, env(safe-area-inset-bottom)); }
+  #user-input { min-height: 34px; max-height: 80px; }
+  #welcome { padding: 16px 12px 24px; }
+  #welcome h1 { font-size: 22px; }
+  #welcome p { font-size: 12px; }
 }
