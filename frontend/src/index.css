@@ -73,6 +73,7 @@ body::after {
   flex-direction: column;
   height: 100vh;
   height: 100dvh;
+
   max-width: 900px;
   margin: 0 auto;
 }
