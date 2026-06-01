@@ -156,7 +156,7 @@ export function VoiceAgent({ onClose }) {
         dc.onmessage = (e) => { if (!cancelled) try { handleEvent(JSON.parse(e.data)); } catch (_) {} };
         dc.onerror   = () => { if (!cancelled) { setStatus('error'); setErr({ icon: '⚠️', text: 'Voice connection lost. Please end and try again.' }); } };
         const offer = await pc.createOffer(); await pc.setLocalDescription(offer);
-        const sdpRes = await fetch(`https://api.openai.com/v1/realtime?model=${REALTIME_MODEL}`, {
+        const sdpRes = await fetch(`https://api.openai.com/v1/realtime/calls${REALTIME_MODEL}`, {
           method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/sdp' }, body: offer.sdp
         });
         if (!sdpRes.ok) throw Object.assign(new Error(), { friendly: { icon: '⚠️', text: `Connection refused by AI server. (${sdpRes.status})` } });
